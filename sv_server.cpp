@@ -85,3 +85,30 @@ close(client);
 close(listener);
 return 0;
 }
+/*
+struct sockaddr_in clientaddr;
+int clientaddlen = sizeof(clientaddr)
+char mssv[8];
+.......
+char buf 
+char fbuf
+time_t t = time(NULL)
+struct tm  tm = *localtime(&t)
+while (1)
+{
+  int ret = recv (client,buf,sizeof(buf),0)
+  if (ret < 0).....
+  doc du lieu
+  memcpy (mssv,buf,8);
+  mssv[8] = 0;
+  int hoten_len = ret -25
+  memcpy (hoten,buf+9,hoten_len)
+  hoten[hoten_len]=0
+  ......
+  diemtb = atof (buf+hoten_len+20)
+  // In ra man hinh ........
+  fprintf(fbuf," ......   ",inet_ntoa(clientAddr.sin_addr),tm.tm_year+1900,tm.tm_month+1,.......,buf)
+
+}
+
+*/

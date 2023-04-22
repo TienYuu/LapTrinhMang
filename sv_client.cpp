@@ -74,3 +74,10 @@ printf("Data received: %s\n", buf);
 close(client);
 return 0;
 }
+
+// char thong tin ...
+// co the dung while de nhap thong tin, khi mssv = 0000 thi ngung
+
+// sprintf (buf,"%s %s ...", mssv,...)
+// sau khi dung co the nhap thi dung fflush(stdin) neu bi nhay co the dung getchar()
+// send (client,buf,strlen(buf),0)
