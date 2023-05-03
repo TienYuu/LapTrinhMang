@@ -14,18 +14,7 @@ string convertToString(char a[])
     string s = a;
     return s;
 }
-void removeClient(int client[64],int n,int i) {
- if (i < n) {
-        // reduce size of array and move all
-        // elements one space ahead
-        n = n - 1;
-        for (int j = i; j < n; j++) {
-            client[j] = client[j + 1];
-        }
-    }
- 
-   
-}
+
 int main() 
 {
     int listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -108,13 +97,7 @@ int main()
             tmp[i]=clients[i];
         }
         
-        
-        // Hoi ten cua client
-        for (int i = 0; i< num_clients;i++) {
-         
-         
-         } 
-        // Kiểm tra sự kiện có dữ liệu truyền đến socket client
+         // Kiểm tra sự kiện có dữ liệu truyền đến socket client
         for (int i = 0; i < num_clients; i++)
             if (FD_ISSET(clients[i], &fdread))
             {
@@ -122,7 +105,18 @@ int main()
                 if (ret <= 0)
                 {
                     printf("Client %d disconnected\n", clients[i]);
-                    removeClient(clients, num_clients, i);
+                    for (int k=i;k<num_clients;k++)
+                    {
+                        clients[i-1]=clients[i];
+                        for (int j=0;j<num_clients;j++)
+                   {   
+                    char dismsg[256];
+                    sprintf(dismsg, "%s left the chat",name[i].c_str());
+                    if ((tmp[j]!=clients[i])&&(name[k].size()!=0))
+                    send(tmp[j],dismsg,sizeof(dismsg),0);
+                  }
+                    }
+                    num_clients --;
                     i--;
                     continue;
                 }
