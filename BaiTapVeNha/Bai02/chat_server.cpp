@@ -107,14 +107,16 @@ int main()
                     printf("Client %d disconnected\n", clients[i]);
                     for (int k=i;k<num_clients;k++)
                     {
-                        clients[i-1]=clients[i];
+                        clients[i]=clients[i+1];
                         for (int j=0;j<num_clients;j++)
                    {   
                     char dismsg[256];
                     sprintf(dismsg, "%s left the chat",name[i].c_str());
                     if ((tmp[j]!=clients[i])&&(name[k].size()!=0))
                     send(tmp[j],dismsg,sizeof(dismsg),0);
-                  }
+                  }     
+                  name[i] = name[i+1];
+                        cout <<i << " - " << name[i] << "\n";
                     }
                     num_clients --;
                     i--;
