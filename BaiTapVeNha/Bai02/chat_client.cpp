@@ -50,6 +50,10 @@ int main() {
         if (FD_ISSET(client, &fdread))
         {
             ret = recv(client, buf, sizeof(buf), 0);
+            if (ret <= 0) {
+                cout << "Connect to server lost! ";
+                break;
+            }
             buf[ret] = 0;
             cout << "--------------------------" << "\n";
             printf(" %s\n", buf);
