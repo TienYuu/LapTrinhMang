@@ -108,6 +108,7 @@ int main()
                     for (int k=i;k<num_clients;k++)
                     {
                         clients[i]=clients[i+1];
+                        tmp[i] = tmp[i+1]; 
                         for (int j=0;j<num_clients;j++)
                    {   
                     char dismsg[256];
@@ -116,7 +117,7 @@ int main()
                     send(tmp[j],dismsg,sizeof(dismsg),0);
                   }     
                   name[i] = name[i+1];
-                        cout <<i << " - " << name[i] << "\n";
+                        
                     }
                     num_clients --;
                     i--;
