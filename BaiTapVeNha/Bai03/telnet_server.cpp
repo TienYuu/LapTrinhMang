@@ -1,6 +1,4 @@
 #include <stdio.h>
-#include <bits/stdc++.h>
-using namespace std;
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -8,17 +6,16 @@ using namespace std;
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <string.h>
-#include <iostream>
 #include <sys/select.h>
-#include <fstream>
-string convertToString(char a[])
-{
-    string s = a;
-    return s;
-}
+
+int users[64];
+int num_users = 0;
+
+void process_request(int client, char *buf);
+void remove_user(int client);
 
 int main() 
-{   
+{
     int listener = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (listener == -1)
     {
@@ -43,63 +40,22 @@ int main()
         return 1;
     }
 
-    fd_set fdread;
-    int clients[64];
-    int loginclients[64];
-    char buf[11];
-    int num_clients = 0;
+    fd_set fdread, fdtest;
     
-    string filename("telnet_pass.txt");
-    vector<string> lines;
-    string line;
- 
-    //Mở file bằng ifstream
-    ifstream input_file(filename);
-    //Kiểm tra file đã mở thành công chưa
-    if (!input_file.is_open()) {
-        cerr << "Could not open the file - '"
-             << filename << "'" << endl;
-        return EXIT_FAILURE;
-    }
+    // Xóa tất cả socket trong tập fdread
+    FD_ZERO(&fdread);
+    
+    // Thêm socket listener vào tập fdread
+    FD_SET(listener, &fdread);
 
-    //Đọc từng dòng trong
-    while (getline(input_file, line)){
-        lines.push_back(line);//Lưu từng dòng như một phần tử vào vector lines.
-    }
-
-    //Xuất từng dòng từ lines và in ra màn hình
-    for (const auto &i : lines)
-        cout << i << endl;
-
-    //Đóng file
-    
-    
-    
+    char buf[256];
     
     while (1)
     {
-        // Xóa tất cả socket trong tập fdread
-        FD_ZERO(&fdread);
+        fdtest = fdread;
 
-        // Thêm socket listener vào tập fdread
-        FD_SET(listener, &fdread);
-        int maxdp = listener + 1;
-        
-    
-        // Thêm các socket client vào tập fdread
-        for (int i = 0; i < num_clients; i++)
-        {
-            FD_SET(clients[i], &fdread);
-            if (maxdp < clients[i] + 1)
-                maxdp = clients[i] + 1;
-        }
-
-        // Cấu trúc xác định thời gian chờ (5s)
-        struct timeval tv;
-        tv.tv_sec = 5;
-        tv.tv_usec = 0;
         // Chờ đến khi sự kiện xảy ra
-        int ret = select(maxdp, &fdread, NULL, NULL, NULL);
+        int ret = select(FD_SETSIZE, &fdtest, NULL, NULL, NULL);
 
         if (ret < 0)
         {
@@ -107,38 +63,133 @@ int main()
             return 1;
         }
 
-        // Kiểm tra sự kiện có yêu cầu kết nối
-        if (FD_ISSET(listener, &fdread))
+        for (int i = listener; i < FD_SETSIZE; i++)
         {
-            int client = accept(listener, NULL, NULL);
-            printf("Ket noi moi: %d\n", client);
-            clients[num_clients++] = client;
-        }
-        
-        
-         // Kiểm tra sự kiện có dữ liệu truyền đến socket client
-        for (int i = 0; i < num_clients; i++)
-            if (FD_ISSET(clients[i], &fdread))
+            if (FD_ISSET(i, &fdtest))
             {
-                ret = recv(clients[i], buf, sizeof(buf), 0);
-                if (ret <= 0)
+                if (i == listener)
                 {
-                continue;
+                    int client = accept(listener, NULL, NULL);
+                    if (client < FD_SETSIZE)
+                    {
+                        remove_user(client);
+                        FD_SET(client, &fdread);
+                        printf("New client connected: %d\n", client);
+                    }
+                    else
+                    {
+                        // Dang co qua nhieu ket noi
+                        close(client);
+                    }
                 }
-                else 
+                else
                 {
-                buf[ret] = 0;
-                char them[11] = " > out.txt";
-                strcat(buf,them);
-                cout << buf;
-                }
-                }
-                
-            }     
-    
+                    int ret = recv(i, buf, sizeof(buf), 0);
+                    if (ret <= 0)
+                    {
+                        FD_CLR(i, &fdread);
+                        close(i);
+                    }
+                    else
+                    {
+                        buf[ret] = 0;
+                        printf("Received from %d: %s\n", i, buf);
 
-    input_file.close();
+                        // Xu ly yeu cau tu client
+                        process_request(i, buf);
+                    }
+                }
+            }
+        }
+    }
+
     close(listener);    
 
     return 0;
+}
+
+void process_request(int client, char *buf)
+{
+    int i = 0;
+    for (; i < num_users; i++)
+        if (users[i] == client)
+            break;
+    
+    if (i == num_users)
+    {
+        // Chua dang nhap
+        char user[32], pass[32], tmp[65], line[65];
+        int ret = sscanf(buf, "%s%s%s", user, pass, tmp);
+        if (ret == 2)
+        {
+            int found = 0;
+            sprintf(tmp, "%s %s\n", user, pass);
+            FILE *f = fopen("telnet_pass.txt", "r");
+            while (fgets(line, sizeof(line), f) != NULL)
+            {
+                if (strcmp(line, tmp) == 0)
+                {
+                    found = 1;
+                    break;
+                }                    
+            }
+            fclose(f);
+
+            if (found)
+            {
+                char *msg = "Dang nhap thanh cong. Hay nhap lenh de thuc hien.\n";
+                send(client, msg, strlen(msg), 0);
+
+                users[num_users] = client;
+                num_users++;
+            }
+            else
+            {
+                char *msg = "Nhap sai tai khoan. Hay nhap lai.\n";
+                send(client, msg, strlen(msg), 0);
+            }
+        }
+        else
+        {
+            char *msg = "Nhap sai cu phap. Hay nhap lai.\n";
+            send(client, msg, strlen(msg), 0);
+        }
+    }
+    else
+    {
+        // Da dang nhap
+        char tmp[256];
+        if (buf[strlen(buf) - 1] == '\n')
+            buf[strlen(buf) - 1] = '\0';
+        sprintf(tmp, "%s > out.txt", buf);
+
+        // Thuc hien lenh
+        system(tmp);
+
+        // Tra ket qua cho client
+        FILE *f = fopen("out.txt", "rb");
+        while (!feof(f))
+        {
+            int ret = fread(tmp, 1, sizeof(tmp), f);
+            if (ret <= 0)
+                break;
+            send(client, tmp, ret, 0);
+        }
+        fclose(f);
+    }
+}
+
+void remove_user(int client)
+{
+    int i = 0;
+    for (; i < num_users; i++)
+        if (users[i] == client)
+            break;
+    
+    if (i < num_users)
+    {
+        if (i < num_users - 1)
+            users[i] = users[num_users - 1];
+        num_users--;
+    }
 }
