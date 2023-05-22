@@ -56,7 +56,7 @@ int main() {
             }
             buf[ret] = 0;
             cout << "--------------------------" << "\n";
-            printf(" %s\n", buf);
+            printf("%s\n", buf);
         }
     }
 
