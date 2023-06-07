@@ -3,7 +3,8 @@
         "string": "cpp",
         "iostream": "cpp",
         "string_view": "cpp",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "multi_th_client": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
